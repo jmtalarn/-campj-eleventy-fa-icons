@@ -35,18 +35,13 @@ library.add(fal);
 library.add(fad);
 
 function FontAwesomeCss() {
-	console.log({ css: dom.css() });
-	return dom.css();
+	return dom.css().trim();
 }
 
 function FontAwesomeIcon({ prefix, iconName, ...rest }) {
-	console.log({
-		prefix,
-		iconName,
-		icon: findIconDefinition({ prefix, iconName, ...rest }),
-		...rest,
-	});
-	return icon(findIconDefinition({ prefix, iconName, ...rest })).html;
+	return icon(findIconDefinition({ prefix, iconName }), rest)
+		.html.join("")
+		.trim();
 }
 
 https: module.exports = { FontAwesomeIcon, FontAwesomeCss };
