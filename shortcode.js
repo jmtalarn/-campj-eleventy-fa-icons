@@ -4,176 +4,49 @@ require("intl-list-format/locale-data/en");
 const fs = require("fs");
 const path = require("path");
 const camelCase = require("camelcase");
-const { icon, toHtml } = require("@fortawesome/fontawesome-svg-core");
+const {
+	icon,
+	toHtml,
+	dom,
+	library,
+	findIconDefinition,
+} = require("@fortawesome/fontawesome-svg-core");
 
-const allBrandsIcons = require("@fortawesome/free-brands-svg-icons");
-const allSolidIcons = require("@fortawesome/pro-solid-svg-icons");
-const allRegularIcons = require("@fortawesome/pro-regular-svg-icons");
-const allLightIcons = require("@fortawesome/pro-light-svg-icons");
-const allDuotoneIcons = require("@fortawesome/pro-duotone-svg-icons");
+// const allBrandsIcons = require("@fortawesome/free-brands-svg-icons");
+// const allSolidIcons = require("@fortawesome/pro-solid-svg-icons");
+// const allRegularIcons = require("@fortawesome/pro-regular-svg-icons");
+// const allLightIcons = require("@fortawesome/pro-light-svg-icons");
+// const allDuotoneIcons = require("@fortawesome/pro-duotone-svg-icons");
 
-let symbols = {};
+const fab = require("@fortawesome/free-brands-svg-icons").fab;
+const fas = require("@fortawesome/pro-solid-svg-icons").fas;
+const far = require("@fortawesome/pro-regular-svg-icons").far;
+const fal = require("@fortawesome/pro-light-svg-icons").fal;
+const fad = require("@fortawesome/pro-duotone-svg-icons").fad;
 
-function _getAttrs(obj) {
-	let attrs = ``;
-	const attrKeys = Object.keys(obj);
+library.add(fab);
 
-	if (attrKeys.length > 0) {
-		attrs = `${attrKeys.map((key) => ` ${key}="${obj[key]}"`).join("")}`;
-	}
-	return attrs;
+library.add(fas);
+
+library.add(far);
+
+library.add(fal);
+
+library.add(fad);
+
+function FontAwesomeCss() {
+	console.log({ css: dom.css() });
+	return dom.css();
 }
 
-function writeSvg() {
-	const outputPath = `${path.resolve(process.cwd(), "./dist")}/fa-icons.svg`;
-	const symbolsHtml = `${Object.keys(symbols)
-		.map((iconId) => symbols[iconId])
-		.join(`\n`)}`;
-	const output = `<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">${symbolsHtml}</svg>`;
-	fs.writeFileSync(outputPath, output, `utf-8`);
+function FontAwesomeIcon({ prefix, iconName, ...rest }) {
+	console.log({
+		prefix,
+		iconName,
+		icon: findIconDefinition({ prefix, iconName, ...rest }),
+		...rest,
+	});
+	return icon(findIconDefinition({ prefix, iconName, ...rest })).html;
 }
 
-const TYPES = ["solid", "regular", "brand", "light", "duotone"];
-
-const LIST_FORMATTER = new Intl.ListFormat("en", {
-	style: "short",
-	type: "disjunction",
-});
-
-const LIST_FORMATTER_TYPES = new Intl.ListFormat("en", {
-	style: "short",
-	type: "conjunction",
-});
-
-function getIconSet(type = "solid", canBeNull = false) {
-	let iconSet = null;
-	switch (type) {
-		case "solid":
-			iconSet = allSolidIcons;
-			break;
-		case "regular":
-			iconSet = allRegularIcons;
-			break;
-		case "brand":
-			iconSet = allBrandsIcons;
-			break;
-		case "light":
-			iconSet = allLightIcons;
-			break;
-		case "duotone":
-			iconSet = allDuotoneIcons;
-			break;
-		default:
-			iconSet = canBeNull ? null : allSolidIcons;
-			break;
-	}
-	return iconSet;
-}
-
-function getAvailableIcons(type, log = true) {
-	if (!TYPES.includes(type)) {
-		console.warn(
-			`FontAwesomeIcon:: you specified the type '${type}' for the icon '${name}'. The "type" parameter must be one of: ${LIST_FORMATTER.format(
-				TYPES
-			)}.`
-		);
-		return;
-	}
-	let iconSet = getIconSet(type, true);
-	if (!iconSet) {
-		if (log) {
-			console.warn(
-				`FontAwesomeIcon:: No icons available for the type: '${type}'.`
-			);
-		}
-		return false;
-	}
-	let availableIcons = Object.keys(iconSet)
-		.map((i, idx) => (idx > 2 ? iconSet[i].iconName : false))
-		.filter(Boolean);
-	if (log) {
-		console.log(
-			`FontaAwesomeIcon:: available icons for the type '${type}' are:\n${LIST_FORMATTER_TYPES.format(
-				availableIcons
-			)}`
-		);
-	}
-	return availableIcons;
-}
-
-function isIconAvailable(name, type) {
-	if (!TYPES.includes(type)) {
-		console.warn(
-			`FontAwesomeIcon:: you specified the type '${type}' for the icon '${name}'. The "type" parameter must be one of: ${LIST_FORMATTER.format(
-				TYPES
-			)}.`
-		);
-		return;
-	}
-	let availableIcons = getAvailableIcons(type, false);
-	if (!availableIcons) {
-		return console.warn(
-			`FontAwesomeIcon:: couldn't find the icon set for the type '${type}'.`
-		);
-	}
-	const faName = camelCase(name, { pascalCase: false });
-	if (availableIcons.includes(faName)) {
-		return console.log(
-			`FontAwesomeIcon:: yes, the icon '${faName}' is available in type '${type}'.`
-		);
-	} else {
-		let result = `FontAwesomeIcon:: no, the icon '${name}' is not available in type '${type}'`;
-		let foundInOtherLibraries = [];
-		for (type of TYPES) {
-			availableIcons = getAvailableIcons(type, false);
-			if (availableIcons.includes(faName)) {
-				foundInOtherLibraries.push(type) = true;
-			}
-		}
-		if (foundInOtherLibraries) {
-			result = `${result}, but it is available in the type '${typefoundInOtherLibraries.join(
-				", "
-			)}'.`;
-		}
-		console.warn(result);
-	}
-}
-
-function FontAwesomeIcon({ name, type = "solid", tag = "i", ...rest }) {
-	if (!TYPES.includes(type)) {
-		console.warn(
-			`FontAwesomeIcon:: you specified the type ${type} for the icon ${name}. The "type" parameter must be one of: ${LIST_FORMATTER.format(
-				TYPES
-			)}. Setting the type to be "solid".`
-		);
-		type = "solid";
-	}
-	const faName = camelCase(name, { pascalCase: true });
-	const iconName = `fa${faName}`;
-	let iconSet = getIconSet(type);
-	let attrClass = rest.class ? ` ${rest.class}` : ``;
-	delete rest.class;
-
-	let attrs = _getAttrs(rest);
-	let faIcon = icon(iconSet[iconName], { symbol: true });
-	if (!faIcon) {
-		console.warn(
-			`FontAwesomeIcon:: you tried to use the icon ${name} with type ${type}, but it doesn't exist in the free version of FontAwesome. You can check available types in your  .eleventy.js file - see the docs.`
-		);
-		return `<${tag} class="icon${attrClass}"${attrs}>${iconName}</${tag}>`;
-	}
-
-	let faIconId = `${faIcon.prefix}-fa-${faIcon.iconName}`;
-	let svgSymbol;
-
-	if (!symbols[faIconId]) {
-		svgSymbol = toHtml(
-			icon(iconSet[iconName], { symbol: true }).abstract[0].children[0]
-		);
-		symbols[faIconId] = svgSymbol;
-		writeSvg();
-	}
-	return `<${tag} class="icon${attrClass}"${attrs}><svg><use xlink:href="/fa-icons.svg#${faIconId}"></use></svg></${tag}>`;
-}
-
-module.exports = { FontAwesomeIcon, getAvailableIcons, isIconAvailable };
+https: module.exports = { FontAwesomeIcon, FontAwesomeCss };
